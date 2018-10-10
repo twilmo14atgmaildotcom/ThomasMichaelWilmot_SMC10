@@ -1,7 +1,7 @@
 %% Guitar Playing and Motor Interaction
 % Thomas Michael Wilmot
 % Student of Sound and Music Computing MSc at Aalborg Univeristy
-% Last updated: 03/08/18
+% Last updated: 25/09/18
 %
 % This script is used to analyse electromyoneurograms recorded when a
 % subject performed the simplified motion components that combine to create
@@ -16,7 +16,7 @@ close all;
 %% Go to data folder
 
 % Change directory
-cd('C:\Users\twilm\OneDrive\Documents\GitHub\SMC10_ThomasWilmot\SMC10ThomasWilmot\Delsysdata210318\TomSimpleMotionDelsys_210318');
+%cd('C:\Users\twilm\OneDrive\Documents\GitHub\SMC10_ThomasWilmot\SMC10ThomasWilmot\Delsysdata210318\TomSimpleMotionDelsys_210318');
 
 %% Import Data
 % if file below is not shown then:
@@ -250,8 +250,8 @@ addpath('C:\Users\twilm\OneDrive\Documents\GitHub\SMC10_ThomasWilmot\SMC10Thomas
 run LEMG_Analyzer.m
 
 % >open desired EMG or EEG data>enter sample frequency>click start clustering
-% 0.05 0.3
-display('0.05 0.3 with NRVANTINT works best. Press space to continue.');
+% 0.05 0.32
+display('0.05 0.2 with NRVANTINT works best. Press space to continue.');
 pause;
 %% Convert Struct of templates into cell
 
@@ -268,6 +268,7 @@ save('TMW_SMC10_wlemgout.mat')
 
 %% Load output from LEMG_Anaylzer.m
 clc;
+close all;
 clear all;
 load('TMW_SMC10_wlemgout.mat');
 load('all_data_DORSUM_Gyro');
@@ -454,371 +455,924 @@ scrs_all(5,idx_across)=0;
 
 %% Separate scores per motion
 
+% Muscle Activty+Motion Onsets/Offsets indices
+for idx=1:length(idx_mo);
+    OnOff(1,idx)=min(idx_mo{idx});
+    OnOff(2,idx)=max(idx_mo{idx});
+    OnOff(3,idx)=scrs_all(1,OnOff(1,idx));
+end
+OnOff(4,:)=OnOff(2,:)-OnOff(1,:);
+OnOff(4,:)=OnOff(4,:)/fs_all;
+avg_cont=median(OnOff(4,:)); %Median Contraction length
+std_cont=std(OnOff(4,:)); %Variance in Contraction Length
+idx_nf1=find(OnOff(3,:)==1);
+idx_nf2=find(OnOff(3,:)==2);
+idx_nf3=find(OnOff(3,:)==3);
+idx_nf4=find(OnOff(3,:)==4);
+idx_nf5=find(OnOff(3,:)==5);
+idx_nf6=find(OnOff(3,:)==6);
 
-%test motion
-scrs_tst1=scrs_all(:,(3500):(8000));
-scrs_tst2=scrs_all(:,(7.1*10^4):(7.7*10^4));
-scrs_tst3=scrs_all(:,(1.85*10^5):(1.92*10^5));
-scrs_tst4=scrs_all(:,(2.37*10^5):(2.41*10^5));
-scrs_tst5=scrs_all(:,(3*10^5):(3.06*10^5));
-scrs_tst6=scrs_all(:,(3.72*10^5):(3.77*10^5));
-
- %Remove test data from original 
-% scrs_all(:,(3.72*10^5):(3.77*10^5))=0;
-% scrs_all(:,(3*10^5):(3.06*10^5))=0;
-% scrs_all(:,(2.37*10^5):(2.41*10^5))=0;
-% scrs_all(:,(1.85*10^5):(1.92*10^5))=0;
-% scrs_all(:,(7.1*10^4):(7.7*10^4))=0;
-% scrs_all(:,(3500):(8000))=0;
-
-%Recordings without test data segments
-scrs_1=scrs_all(:,1:wndw);
-scrs_2=scrs_all(:,(wndw+1):(2*wndw));
-scrs_3=scrs_all(:,(2*wndw+1):(3*wndw));
-scrs_4=scrs_all(:,(3*wndw+1):(4*wndw));
-scrs_5=scrs_all(:,(4*wndw+1):(5*wndw));
-scrs_6=scrs_all(:,(5*wndw+1):(6*wndw));
-
-%% Remove 0 spike labels
-
-idx=find(scrs_1(3,:)==0);
-scrs_1(:,idx)=[];
-idx=find(scrs_2(3,:)==0);
-scrs_2(:,idx)=[];
-idx=find(scrs_3(3,:)==0);
-scrs_3(:,idx)=[];
-idx=find(scrs_4(3,:)==0);
-scrs_4(:,idx)=[];
-idx=find(scrs_5(3,:)==0);
-scrs_5(:,idx)=[];
-idx=find(scrs_6(3,:)==0);
-scrs_6(:,idx)=[];
-
-%test motions
-idx=find(scrs_tst1(3,:)==0);
-scrs_tst1(:,idx)=[];
-idx=find(scrs_tst2(3,:)==0);
-scrs_tst2(:,idx)=[];
-idx=find(scrs_tst3(3,:)==0);
-scrs_tst3(:,idx)=[];
-idx=find(scrs_tst4(3,:)==0);
-scrs_tst4(:,idx)=[];
-idx=find(scrs_tst5(3,:)==0);
-scrs_tst5(:,idx)=[];
-idx=find(scrs_tst6(3,:)==0);
-scrs_tst6(:,idx)=[];
-
-%% Remove (recording) and (binary motion)
-scrs_1(1:2,:)=[];
-scrs_2(1:2,:)=[];
-scrs_3(1:2,:)=[];
-scrs_4(1:2,:)=[];
-scrs_5(1:2,:)=[];
-scrs_6(1:2,:)=[];
-%test motion
-scrs_tst1(1:2,:)=[];
-scrs_tst2(1:2,:)=[];
-scrs_tst3(1:2,:)=[];
-scrs_tst4(1:2,:)=[];
-scrs_tst5(1:2,:)=[];
-scrs_tst6(1:2,:)=[];
-
-%% Remove interspike intervals = 0
-
-idx=find(scrs_1(3,:)==0);
-scrs_1(:,idx)=[];
-idx=find(scrs_2(3,:)==0);
-scrs_2(:,idx)=[];
-idx=find(scrs_3(3,:)==0);
-scrs_3(:,idx)=[];
-idx=find(scrs_4(3,:)==0);
-scrs_4(:,idx)=[];
-idx=find(scrs_5(3,:)==0);
-scrs_5(:,idx)=[];
-idx=find(scrs_6(3,:)==0);
-scrs_6(:,idx)=[];
-
-%test motions
-idx=find(scrs_tst1(3,:)==0);
-scrs_tst1(:,idx)=[];
-idx=find(scrs_tst2(3,:)==0);
-scrs_tst2(:,idx)=[];
-idx=find(scrs_tst3(3,:)==0);
-scrs_tst3(:,idx)=[];
-idx=find(scrs_tst4(3,:)==0);
-scrs_tst4(:,idx)=[];
-idx=find(scrs_tst5(3,:)==0);
-scrs_tst5(:,idx)=[];
-idx=find(scrs_tst6(3,:)==0);
-scrs_tst6(:,idx)=[];
-
-%% Create histograms per neuron per recording
-clear('idx2');
-
-for idx=1:max(unique(scrs_2(1,:)));
-    %scrs1
-    idx2{idx}=find(scrs_1(1,:)==idx);
-    [No_ISI1{idx} ~]=histcounts(scrs_1(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI1{idx},22));hold on; %11 samples=10ms window
-    %scrs2
-    idx2{idx}=find(scrs_2(1,:)==idx);
-    [No_ISI2{idx} ~]=histcounts(scrs_2(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI2{idx},11));hold on;
-    %scrs3
-    idx2{idx}=find(scrs_3(1,:)==idx);
-    [No_ISI3{idx} ~]=histcounts(scrs_3(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI3{idx},11),'r--');hold on;
-    %scrs4
-    idx2{idx}=find(scrs_4(1,:)==idx);
-    [No_ISI4{idx} ~]=histcounts(scrs_4(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI4{idx},11));hold on; %11 samples=5ms window
-    %scrs5
-    idx2{idx}=find(scrs_5(1,:)==idx);
-    [No_ISI5{idx} ~]=histcounts(scrs_5(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI5{idx},11));hold on;
-    %scrs6
-    idx2{idx}=find(scrs_6(1,:)==idx);
-    [No_ISI6{idx} ~]=histcounts(scrs_6(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI6{idx},11));hold on;  
+for idx_ZTST=1:5;
+    %test Motions
+    scrs_tst1=scrs_all(:,(OnOff(1,idx_nf1(idx_ZTST))):(OnOff(2,idx_nf1(idx_ZTST))));
+    scrs_tst2=scrs_all(:,(OnOff(1,idx_nf2(idx_ZTST))):(OnOff(2,idx_nf2(idx_ZTST))));
+    scrs_tst3=scrs_all(:,(OnOff(1,idx_nf3(idx_ZTST))):(OnOff(2,idx_nf3(idx_ZTST))));
+    scrs_tst4=scrs_all(:,(OnOff(1,idx_nf4(idx_ZTST))):(OnOff(2,idx_nf4(idx_ZTST))));
+    scrs_tst5=scrs_all(:,(OnOff(1,idx_nf5(idx_ZTST))):(OnOff(2,idx_nf5(idx_ZTST))));
+    scrs_tst6=scrs_all(:,(OnOff(1,idx_nf6(idx_ZTST))):(OnOff(2,idx_nf6(idx_ZTST))));
+    
+    scrs_1=[scrs_all(:,1:OnOff(1,idx_nf1(idx_ZTST))),scrs_all(:,OnOff(2,idx_nf1(idx_ZTST)):wndw)];
+    scrs_2=[scrs_all(:,wndw+1:OnOff(1,idx_nf2(idx_ZTST))),scrs_all(:,OnOff(2,idx_nf2(idx_ZTST)):2*wndw)];
+    scrs_3=[scrs_all(:,2*wndw+1:OnOff(1,idx_nf3(idx_ZTST))),scrs_all(:,OnOff(2,idx_nf3(idx_ZTST)):3*wndw)];
+    scrs_4=[scrs_all(:,3*wndw+1:OnOff(1,idx_nf4(idx_ZTST))),scrs_all(:,OnOff(2,idx_nf4(idx_ZTST)):4*wndw)];
+    scrs_5=[scrs_all(:,4*wndw+1:OnOff(1,idx_nf5(idx_ZTST))),scrs_all(:,OnOff(2,idx_nf5(idx_ZTST)):5*wndw)];
+    scrs_6=[scrs_all(:,5*wndw+1:OnOff(1,idx_nf6(idx_ZTST))),scrs_all(:,OnOff(2,idx_nf6(idx_ZTST)):6*wndw)];
+    
+    %     training data
+    %     scrs_1=scrs_all(:,1:wndw);
+    %     scrs_2=scrs_all(:,(wndw+1):(2*wndw));
+    %     scrs_3=scrs_all(:,(2*wndw+1):(3*wndw));
+    %     scrs_4=scrs_all(:,(3*wndw+1):(4*wndw));
+    %     scrs_5=scrs_all(:,(4*wndw+1):(5*wndw));
+    %     scrs_6=scrs_all(:,(5*wndw+1):(6*wndw));
+    
+    %% Remove 0 spike labels
+    
+    idx=find(scrs_1(3,:)==0);
+    scrs_1(:,idx)=[];
+    idx=find(scrs_2(3,:)==0);
+    scrs_2(:,idx)=[];
+    idx=find(scrs_3(3,:)==0);
+    scrs_3(:,idx)=[];
+    idx=find(scrs_4(3,:)==0);
+    scrs_4(:,idx)=[];
+    idx=find(scrs_5(3,:)==0);
+    scrs_5(:,idx)=[];
+    idx=find(scrs_6(3,:)==0);
+    scrs_6(:,idx)=[];
+    
     %test motions
-    %scrs_tst1
-    idx2{idx}=find(scrs_tst1(1,:)==idx);
-    [No_ISI_tst1{idx} ~]=histcounts(scrs_tst1(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI_tst1{idx},22));hold on; %11 samples=10ms window
-    %scrs_tst2
-    idx2{idx}=find(scrs_tst2(1,:)==idx);
-    [No_ISI_tst2{idx} ~]=histcounts(scrs_tst2(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI_tst2{idx},11));hold on;
-    %scrs_tst3
-    idx2{idx}=find(scrs_tst3(1,:)==idx);
-    [No_ISI_tst3{idx} ~]=histcounts(scrs_tst3(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI_tst3{idx},11),'r--');hold on;
-    %scrs_tst4
-    idx2{idx}=find(scrs_tst4(1,:)==idx);
-    [No_ISI_tst4{idx} ~]=histcounts(scrs_tst4(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI_tst4{idx},11));hold on; %11 samples=5ms window
-    %scrs_tst5
-    idx2{idx}=find(scrs_tst5(1,:)==idx);
-    [No_ISI_tst5{idx} ~]=histcounts(scrs_tst5(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI_tst5{idx},11));hold on;
-    %scrs_tst6
-    idx2{idx}=find(scrs_tst6(1,:)==idx);
-    [No_ISI_tst6{idx} ~]=histcounts(scrs_tst6(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot(smooth(No_ISI_tst6{idx},11));hold on;
+    idx=find(scrs_tst1(3,:)==0);
+    scrs_tst1(:,idx)=[];
+    idx=find(scrs_tst2(3,:)==0);
+    scrs_tst2(:,idx)=[];
+    idx=find(scrs_tst3(3,:)==0);
+    scrs_tst3(:,idx)=[];
+    idx=find(scrs_tst4(3,:)==0);
+    scrs_tst4(:,idx)=[];
+    idx=find(scrs_tst5(3,:)==0);
+    scrs_tst5(:,idx)=[];
+    idx=find(scrs_tst6(3,:)==0);
+    scrs_tst6(:,idx)=[];
+    
+    %% Remove (recording) and (binary motion)
+    scrs_1(1:2,:)=[];
+    scrs_2(1:2,:)=[];
+    scrs_3(1:2,:)=[];
+    scrs_4(1:2,:)=[];
+    scrs_5(1:2,:)=[];
+    scrs_6(1:2,:)=[];
+    %test motion
+    scrs_tst1(1:2,:)=[];
+    scrs_tst2(1:2,:)=[];
+    scrs_tst3(1:2,:)=[];
+    scrs_tst4(1:2,:)=[];
+    scrs_tst5(1:2,:)=[];
+    scrs_tst6(1:2,:)=[];
+    
+    %% Remove interspike intervals = 0
+    
+    idx=find(scrs_1(3,:)==0);
+    scrs_1(:,idx)=[];
+    idx=find(scrs_2(3,:)==0);
+    scrs_2(:,idx)=[];
+    idx=find(scrs_3(3,:)==0);
+    scrs_3(:,idx)=[];
+    idx=find(scrs_4(3,:)==0);
+    scrs_4(:,idx)=[];
+    idx=find(scrs_5(3,:)==0);
+    scrs_5(:,idx)=[];
+    idx=find(scrs_6(3,:)==0);
+    scrs_6(:,idx)=[];
+    
+    %test motions
+    idx=find(scrs_tst1(3,:)==0);
+    scrs_tst1(:,idx)=[];
+    idx=find(scrs_tst2(3,:)==0);
+    scrs_tst2(:,idx)=[];
+    idx=find(scrs_tst3(3,:)==0);
+    scrs_tst3(:,idx)=[];
+    idx=find(scrs_tst4(3,:)==0);
+    scrs_tst4(:,idx)=[];
+    idx=find(scrs_tst5(3,:)==0);
+    scrs_tst5(:,idx)=[];
+    idx=find(scrs_tst6(3,:)==0);
+    scrs_tst6(:,idx)=[];
+    
+    %% Create histograms per neuron per recording
+    clear('idx2');
+    
+    for idx=1:max(unique(scrs_2(1,:)));
+        %scrs1
+        idx2{idx}=find(scrs_1(1,:)==idx);
+        [No_ISI1{idx} ~]=histcounts((scrs_1(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI1{idx},5e-03));hold on;
+        %scrs2
+        idx2{idx}=find(scrs_2(1,:)==idx);
+        [No_ISI2{idx} ~]=histcounts((scrs_2(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI2{idx},5e-03));hold on;
+        %scrs3
+        idx2{idx}=find(scrs_3(1,:)==idx);
+        [No_ISI3{idx} ~]=histcounts((scrs_3(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI3{idx},5e-03),'r--');hold on;
+        %scrs4
+        idx2{idx}=find(scrs_4(1,:)==idx);
+        [No_ISI4{idx} ~]=histcounts((scrs_4(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI4{idx},5e-03));hold on; %11 samples=5ms window
+        %scrs5
+        idx2{idx}=find(scrs_5(1,:)==idx);
+        [No_ISI5{idx} ~]=histcounts((scrs_5(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI5{idx},5e-03));hold on;
+        %scrs6
+        idx2{idx}=find(scrs_6(1,:)==idx);
+        [No_ISI6{idx} ~]=histcounts((scrs_6(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI6{idx},5e-03));hold on;
+        %test motions
+        %scrs_tst1
+        idx2{idx}=find(scrs_tst1(1,:)==idx);
+        [No_ISI_tst1{idx} ~]=histcounts((scrs_tst1(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI_tst1{idx},22));hold on; %11 samples=10ms window
+        %scrs_tst2
+        idx2{idx}=find(scrs_tst2(1,:)==idx);
+        [No_ISI_tst2{idx} ~]=histcounts((scrs_tst2(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI_tst2{idx},5e-03));hold on;
+        %scrs_tst3
+        idx2{idx}=find(scrs_tst3(1,:)==idx);
+        [No_ISI_tst3{idx} ~]=histcounts((scrs_tst3(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI_tst3{idx},5e-03),'r--');hold on;
+        %scrs_tst4
+        idx2{idx}=find(scrs_tst4(1,:)==idx);
+        [No_ISI_tst4{idx} ~]=histcounts((scrs_tst4(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI_tst4{idx},5e-03));hold on; %11 samples=5ms window
+        %scrs_tst5
+        idx2{idx}=find(scrs_tst5(1,:)==idx);
+        [No_ISI_tst5{idx} ~]=histcounts((scrs_tst5(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI_tst5{idx},5e-03));hold on;
+        %scrs_tst6
+        idx2{idx}=find(scrs_tst6(1,:)==idx);
+        [No_ISI_tst6{idx} ~]=histcounts((scrs_tst6(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot(smooth(No_ISI_tst6{idx},5e-03));hold on;
+    end
+    
+    for idx=1:max(unique(scrs_2(1,:)));
+        %scrs3
+        idx2{idx}=find(scrs_3(1,:)==idx);
+        [No_ISI3{idx} ~]=histcounts((scrs_3(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot((smooth(No_ISI3{idx},5e-03))/max(smooth(No_ISI3{idx},5e-03)),'r--');hold on;
+        %scrs_tst
+        idx2{idx}=find(scrs_tst3(1,:)==idx);
+        [No_ISI_tst3{idx} ~]=histcounts((scrs_tst3(3,idx2{idx})/fs_all),'BinWidth',1e-03,'BinLimits',[5e-03,140e-03]);
+        %figure(idx);
+        %plot((smooth(No_ISI_tst3{idx},5e-03))/max(smooth(No_ISI_tst3{idx},5e-03)),'k');hold on;
+    end
+    %add all intervals
+    %smooth/parsing acrtoss probability
+    %compare autocorrelation
+    %% Denoise Rate templates
+    
+    %Check correlation of rate templates to other known rate templates and
+    %weight by number of spikes per neuron. This gives the ratio of similarity
+    %between templates
+    for idx=1:length(idx_neuron);
+        %1
+        ISImat_all=[No_ISI1(idx) No_ISI2(idx) No_ISI3(idx) No_ISI4(idx) No_ISI5(idx) No_ISI6(idx)]';
+        ISImat_all=cell2mat(ISImat_all);
+        
+        % Correlation between templates weighted by number of spikes per neuron
+        % per motion
+        CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI1(idx))>0));
+        CrTemp_1(idx,:)=CrTemp2Temp(1,:);
+        
+        CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI2(idx))>0));
+        CrTemp_2(idx,:)=CrTemp2Temp(2,:);
+        
+        CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI3(idx))>0));
+        CrTemp_3(idx,:)=CrTemp2Temp(3,:);
+        
+        CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI4(idx))>0));
+        CrTemp_4(idx,:)=CrTemp2Temp(4,:);
+        
+        CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI5(idx))>0));
+        CrTemp_5(idx,:)=CrTemp2Temp(5,:);
+        
+        CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI6(idx))>0));
+        CrTemp_6(idx,:)=CrTemp2Temp(6,:);
+    end
+    clear('CrTemp2Temp')
+    
+    %Normalise similarity matrix
+    CrTemp_1=CrTemp_1./max(CrTemp_1')';
+    CrTemp_2=CrTemp_2./max(CrTemp_2')';
+    CrTemp_3=CrTemp_3./max(CrTemp_3')';
+    CrTemp_4=CrTemp_4./max(CrTemp_4')';
+    CrTemp_5=CrTemp_5./max(CrTemp_5')';
+    CrTemp_6=CrTemp_6./max(CrTemp_6')';
+    
+    %Remove negative
+    idx=find(CrTemp_1<0);
+    CrTemp_1(idx)=0;
+    idx=find(CrTemp_2<0);
+    CrTemp_2(idx)=0;
+    idx=find(CrTemp_3<0);
+    CrTemp_3(idx)=0;
+    idx=find(CrTemp_4<0);
+    CrTemp_4(idx)=0;
+    idx=find(CrTemp_5<0);
+    CrTemp_5(idx)=0;
+    idx=find(CrTemp_6<0);
+    CrTemp_6(idx)=0;
+    
+    %Remove ratio of similar templates
+    for idx=1:length(idx_neuron)
+        %         %1
+        %         No_ISI1n(idx,:)=(cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx)));
+        %         %2
+        %         No_ISI2n(idx,:)=(cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx)));
+        %
+        %         %3
+        %         No_ISI3n(idx,:)=(cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx)));
+        %         %4
+        %         No_ISI4n(idx,:)=(cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx)));
+        %
+        %         %5
+        %         No_ISI5n(idx,:)=(cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx)));
+        %         %6
+        %         No_ISI6n(idx,:)=(cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx)));
+        %         %         %1
+        %                 No_ISI1n(idx,:)=((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))-...
+        %                     nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_1(idx,2)));...
+        %                     ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_1(idx,3)));...
+        %                     ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_1(idx,4)));...
+        %                     ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_1(idx,5)));...
+        %                     ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_1(idx,6)))]);
+        %         %         %2
+        %                 No_ISI2n(idx,:)=((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))-...
+        %                     nansum([((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_2(idx,1)));...
+        %                     ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_2(idx,3)));...
+        %                     ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_2(idx,4)));...
+        %                     ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_2(idx,5)));...
+        %                     ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_2(idx,6)))]);
+        %         %         %3
+        %                 No_ISI3n(idx,:)=((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))-...
+        %                     nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_3(idx,2)));...
+        %                     ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_3(idx,1)));...
+        %                     ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_3(idx,4)));...
+        %                     ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_3(idx,5)));...
+        %                     ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_3(idx,6)))]);
+        %         %         %4
+        %                 No_ISI4n(idx,:)=((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))-...
+        %                     nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_4(idx,2)));...
+        %                     ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_4(idx,3)));...
+        %                     ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_4(idx,1)));...
+        %                     ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_4(idx,5)));...
+        %                     ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_4(idx,6)))]);
+        %         %         %5
+        %                 No_ISI5n(idx,:)=((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))-...
+        %                     nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_5(idx,2)));...
+        %                     ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_5(idx,3)));...
+        %                     ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_5(idx,4)));...
+        %                     ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_5(idx,1)));...
+        %                     ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_5(idx,6)))]);
+        %         %         %6
+        %                 No_ISI6n(idx,:)=((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))-...
+        %                     nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_6(idx,2)));...
+        %                     ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_6(idx,3)));...
+        %                     ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_6(idx,4)));...
+        %                     ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_6(idx,5)));...
+        %                     ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_6(idx,1)))]);
+        
+        
+        
+        %1
+        No_ISI1n(idx,:)=((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))-...
+            nansum([-((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_1(idx,2)));...
+            -((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_1(idx,3)));...
+            ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_1(idx,4)));...
+            ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_1(idx,5)));...
+            ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_1(idx,6)))]);
+        %2
+        No_ISI2n(idx,:)=((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))-...
+            nansum([-((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_2(idx,1)));...
+            -((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_2(idx,3)));...
+            ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_2(idx,4)));...
+            ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_2(idx,5)));...
+            ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_2(idx,6)))]);
+        %3
+        No_ISI3n(idx,:)=((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))-...
+            nansum([-((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_3(idx,2)));...
+            -((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_3(idx,1)));...
+            ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_3(idx,4)));...
+            ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_3(idx,5)));...
+            ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_3(idx,6)))]);
+        %4
+        No_ISI4n(idx,:)=((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))-...
+            nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_4(idx,2)));...
+            ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_4(idx,3)));...
+            ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_4(idx,1)));...
+            -((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_4(idx,5)));...
+            -((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_4(idx,6)))]);
+        %5
+        No_ISI5n(idx,:)=((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))-...
+            nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_5(idx,2)));...
+            ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_5(idx,3)));...
+            -((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_5(idx,4)));...
+            ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_5(idx,1)));...
+            -((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_5(idx,6)))]);
+        %6
+        No_ISI6n(idx,:)=((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))-...
+            nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_6(idx,2)));...
+            ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_6(idx,3)));...
+            -((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_6(idx,4)));...
+            -((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_6(idx,5)));...
+            ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_6(idx,1)))]);
+    end
+    
+    %     end
+    %Remove negative values
+    idx=find(No_ISI1n<0);
+    No_ISI1n(idx)=0;
+    idx=find(No_ISI2n<0);
+    No_ISI2n(idx)=0;
+    idx=find(No_ISI3n<0);
+    No_ISI3n(idx)=0;
+    idx=find(No_ISI4n<0);
+    No_ISI4n(idx)=0;
+    idx=find(No_ISI5n<0);
+    No_ISI5n(idx)=0;
+    idx=find(No_ISI6n<0);
+    No_ISI6n(idx)=0;
+    %normalise test hiscounts
+    % for idx=1:length(No_ISI_tst1);
+    % No_ISI_tst1{idx}=No_ISI_tst1{idx}/nanmax(No_ISI_tst1{idx}');
+    % No_ISI_tst2{idx}=No_ISI_tst2{idx}/nanmax(No_ISI_tst2{idx}');
+    % No_ISI_tst3{idx}=No_ISI_tst3{idx}/nanmax(No_ISI_tst3{idx}');
+    % No_ISI_tst4{idx}=No_ISI_tst4{idx}/nanmax(No_ISI_tst4{idx}');
+    % No_ISI_tst5{idx}=No_ISI_tst5{idx}/nanmax(No_ISI_tst5{idx}');
+    % No_ISI_tst6{idx}=No_ISI_tst6{idx}/nanmax(No_ISI_tst6{idx}');
+    % end
+    clear('No_ISI1', 'No_ISI2', 'No_ISI3', 'No_ISI4', 'No_ISI5', 'No_ISI6');
+    
+    
+    %% Correlation with test motion and motion templates
+    %     for idx=1:length(idx_neuron);
+    %         %tst1
+    %         ISImat_tst1=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst1(idx)]';
+    %         ISImat_tst1=cell2mat(ISImat_tst1);
+    %         %tst2
+    %         ISImat_tst2=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst2(idx)]';
+    %         ISImat_tst2=cell2mat(ISImat_tst2);
+    %         %tst3
+    %         ISImat_tst3=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst3(idx)]';
+    %         ISImat_tst3=cell2mat(ISImat_tst3);
+    %         %tst4
+    %         ISImat_tst4=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst4(idx)]';
+    %         ISImat_tst4=cell2mat(ISImat_tst4);
+    %         %tst5
+    %         ISImat_tst5=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst5(idx)]';
+    %         ISImat_tst5=cell2mat(ISImat_tst5);
+    %         %tst6
+    %         ISImat_tst6=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst6(idx)]';
+    %         ISImat_tst6=cell2mat(ISImat_tst6);
+    %
+    %         MLM=corr(ISImat_tst1')*length(find(ISImat_tst1>0));%Most Likely Motion
+    %         MLMtst_1(idx,:)=MLM(7,:);
+    %
+    %         MLM=corr(ISImat_tst2')*length(find(ISImat_tst2>0));%Most Likely Motion
+    %         MLMtst_2(idx,:)=MLM(7,:);
+    %
+    %         MLM=corr(ISImat_tst3')*length(find(ISImat_tst3>0));%Most Likely Motion
+    %         MLMtst_3(idx,:)=MLM(7,:);
+    %
+    %         MLM=corr(ISImat_tst4')*length(find(ISImat_tst4>0));%Most Likely Motion
+    %         MLMtst_4(idx,:)=MLM(7,:);
+    %
+    %         MLM=corr(ISImat_tst5')*length(find(ISImat_tst5>0));%Most Likely Motion
+    %         MLMtst_5(idx,:)=MLM(7,:);
+    %
+    %         MLM=corr(ISImat_tst6')*length(find(ISImat_tst6>0));%Most Likely Motion
+    %         MLMtst_6(idx,:)=MLM(7,:);
+    %     end
+    %     clear('MLM')
+    %     RESULTS1(idx_ZTST,:)=((nansum(MLMtst_1)))/max((nansum(MLMtst_1)));
+    %     RESULTS2(idx_ZTST,:)=((nansum(MLMtst_2)))/max((nansum(MLMtst_2)));
+    %     RESULTS3(idx_ZTST,:)=((nansum(MLMtst_3)))/max((nansum(MLMtst_3)));
+    %     RESULTS4(idx_ZTST,:)=((nansum(MLMtst_4)))/max((nansum(MLMtst_4)));
+    %     RESULTS5(idx_ZTST,:)=((nansum(MLMtst_5)))/max((nansum(MLMtst_5)));
+    %     RESULTS6(idx_ZTST,:)=((nansum(MLMtst_6)))/max((nansum(MLMtst_6)));
+    % end
+    %  for idx=1:length(idx_neuron);
+    % %         %tst1
+    % %         ISImat_tst1=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst1(idx)]';
+    % %         ISImat_tst1=cell2mat(ISImat_tst1);
+    % %         %tst2
+    % %         ISImat_tst2=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst2(idx)]';
+    % %         ISImat_tst2=cell2mat(ISImat_tst2);
+    % %         %tst3
+    % %         ISImat_tst3=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst3(idx)]';
+    % %         ISImat_tst3=cell2mat(ISImat_tst3);
+    % %         %tst4
+    % %         ISImat_tst4=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst4(idx)]';
+    % %         ISImat_tst4=cell2mat(ISImat_tst4);
+    % %         %tst5
+    % %         ISImat_tst5=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst5(idx)]';
+    % %         ISImat_tst5=cell2mat(ISImat_tst5);
+    % %         %tst6
+    % %         ISImat_tst6=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst6(idx)]';
+    % %         ISImat_tst6=cell2mat(ISImat_tst6);
+    % %tst1
+    %         ISImat_tst1=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst1(idx)]';
+    %         ISImat_tst1=cell2mat(ISImat_tst1);
+    %         %tst2
+    %         ISImat_tst2=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst2(idx)]';
+    %         ISImat_tst2=cell2mat(ISImat_tst2);
+    %         %tst3
+    %         ISImat_tst3=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst3(idx)]';
+    %         ISImat_tst3=cell2mat(ISImat_tst3);
+    %         %tst4
+    %         ISImat_tst4=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst4(idx)]';
+    %         ISImat_tst4=cell2mat(ISImat_tst4);
+    %         %tst5
+    %         ISImat_tst5=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst5(idx)]';
+    %         ISImat_tst5=cell2mat(ISImat_tst5);
+    %         %tst6
+    %         ISImat_tst6=[No_ISI1n(idx,:)  No_ISI4n(idx,:) No_ISI_tst6(idx)]';
+    %         ISImat_tst6=cell2mat(ISImat_tst6);
+    %         MLM=corr(ISImat_tst1')*length(find(ISImat_tst1>0));%Most Likely Motion
+    %         MLMtst_1(idx,:)=MLM(3,:);
+    %
+    %         MLM=corr(ISImat_tst2')*length(find(ISImat_tst2>0));%Most Likely Motion
+    %         MLMtst_2(idx,:)=MLM(3,:);
+    %
+    %         MLM=corr(ISImat_tst3')*length(find(ISImat_tst3>0));%Most Likely Motion
+    %         MLMtst_3(idx,:)=MLM(3,:);
+    %
+    %         MLM=corr(ISImat_tst4')*length(find(ISImat_tst4>0));%Most Likely Motion
+    %         MLMtst_4(idx,:)=MLM(3,:);
+    %
+    %         MLM=corr(ISImat_tst5')*length(find(ISImat_tst5>0));%Most Likely Motion
+    %         MLMtst_5(idx,:)=MLM(3,:);
+    %
+    %         MLM=corr(ISImat_tst6')*length(find(ISImat_tst6>0));%Most Likely Motion
+    %         MLMtst_6(idx,:)=MLM(3,:);
+    %  end
+    %     clear('MLM')
+    %     RESULTS1(idx_ZTST,:)=((nansum(MLMtst_1)))/max((nansum(MLMtst_1)));
+    %    RESULTS2(idx_ZTST,:)=((nansum(MLMtst_2)))/max((nansum(MLMtst_2)));
+    %      RESULTS3(idx_ZTST,:)=((nansum(MLMtst_3)))/max((nansum(MLMtst_3)));
+    %      RESULTS4(idx_ZTST,:)=((nansum(MLMtst_4)))/max((nansum(MLMtst_4)));
+    %      RESULTS5(idx_ZTST,:)=((nansum(MLMtst_5)))/max((nansum(MLMtst_5)));
+    %      RESULTS6(idx_ZTST,:)=((nansum(MLMtst_6)))/max((nansum(MLMtst_6)));
+    for idx=1:length(idx_neuron);
+        %         %tst1
+        %         ISImat_tst1=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst1(idx)]';
+        %         ISImat_tst1=cell2mat(ISImat_tst1);
+        %         %tst2
+        %         ISImat_tst2=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst2(idx)]';
+        %         ISImat_tst2=cell2mat(ISImat_tst2);
+        %         %tst3
+        %         ISImat_tst3=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst3(idx)]';
+        %         ISImat_tst3=cell2mat(ISImat_tst3);
+        %         %tst4
+        %         ISImat_tst4=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst4(idx)]';
+        %         ISImat_tst4=cell2mat(ISImat_tst4);
+        %         %tst5
+        %         ISImat_tst5=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst5(idx)]';
+        %         ISImat_tst5=cell2mat(ISImat_tst5);
+        %         %tst6
+        %         ISImat_tst6=[sum([No_ISI1n(idx,:); No_ISI2n(idx,:); No_ISI3n(idx,:)]) sum([No_ISI4n(idx,:); No_ISI5n(idx,:); No_ISI6n(idx,:)]) No_ISI_tst6(idx)]';
+        %         ISImat_tst6=cell2mat(ISImat_tst6);
+        %tst1
+        ISImat_tst1=[No_ISI_tst1(idx) ; zeros(1,135) ;No_ISI1n(idx,:);zeros(1,135);  No_ISI2n(idx,:) ;zeros(1,135);...
+            No_ISI3n(idx,:);zeros(1,135);  No_ISI4n(idx,:) ;zeros(1,135);...
+            No_ISI5n(idx,:);zeros(1,135);  No_ISI6n(idx,:) ;zeros(1,135)]';
+        ISImat_tst1=cell2mat(ISImat_tst1);
+        ISImat_tst1(isnan(ISImat_tst1))=0;
+        %tst2
+        ISImat_tst2=[ No_ISI_tst2(idx) ; zeros(1,135) ;No_ISI1n(idx,:);zeros(1,135);  No_ISI2n(idx,:) ;zeros(1,135);...
+            No_ISI3n(idx,:);zeros(1,135);  No_ISI4n(idx,:) ;zeros(1,135);...
+            No_ISI5n(idx,:);zeros(1,135);  No_ISI6n(idx,:) ;zeros(1,135)]';
+        ISImat_tst2=cell2mat(ISImat_tst2);
+        ISImat_tst2(isnan(ISImat_tst2))=0;
+        %tst3
+        ISImat_tst3=[No_ISI_tst3(idx); zeros(1,135) ;No_ISI1n(idx,:);zeros(1,135);  No_ISI2n(idx,:) ;zeros(1,135);...
+            No_ISI3n(idx,:);zeros(1,135);  No_ISI4n(idx,:) ;zeros(1,135);...
+            No_ISI5n(idx,:);zeros(1,135);  No_ISI6n(idx,:) ;zeros(1,135)]';
+        ISImat_tst3=cell2mat(ISImat_tst3);
+        ISImat_tst3(isnan(ISImat_tst3))=0;
+        %tst4
+        ISImat_tst4=[No_ISI_tst4(idx); zeros(1,135) ;No_ISI1n(idx,:);zeros(1,135);  No_ISI2n(idx,:) ;zeros(1,135);...
+            No_ISI3n(idx,:);zeros(1,135);  No_ISI4n(idx,:) ;zeros(1,135);...
+            No_ISI5n(idx,:);zeros(1,135);  No_ISI6n(idx,:) ;zeros(1,135)]';
+        ISImat_tst4=cell2mat(ISImat_tst4);
+        ISImat_tst4(isnan(ISImat_tst4))=0;
+        %tst5
+        ISImat_tst5=[No_ISI_tst5(idx); zeros(1,135) ;No_ISI1n(idx,:);zeros(1,135);  No_ISI2n(idx,:) ;zeros(1,135);...
+            No_ISI3n(idx,:);zeros(1,135);  No_ISI4n(idx,:) ;zeros(1,135);...
+            No_ISI5n(idx,:);zeros(1,135);  No_ISI6n(idx,:) ;zeros(1,135)]';
+        ISImat_tst5=cell2mat(ISImat_tst5);
+        
+        ISImat_tst5(isnan(ISImat_tst5))=0;
+        %tst6
+        ISImat_tst6=[No_ISI_tst6(idx); zeros(1,135) ;No_ISI1n(idx,:);zeros(1,135);  No_ISI2n(idx,:) ;zeros(1,135);...
+            No_ISI3n(idx,:);zeros(1,135);  No_ISI4n(idx,:) ;zeros(1,135);...
+            No_ISI5n(idx,:);zeros(1,135);  No_ISI6n(idx,:) ;zeros(1,135)]';
+        ISImat_tst6=cell2mat(ISImat_tst6);
+        ISImat_tst6(isnan(ISImat_tst6))=0;
+        %auto correlation using cross correlation with the test data with
+        %itself and training data. a=correlation from 0 to 1 b = lag
+        %tst1 autocorr
+        [a b]=xcorr(interp(cell2mat(No_ISI_tst1(:,idx)),3),interp(ISImat_tst1,3));
+        if max(a)>0; %ignore non firing neurons
+            [pks idx_pks]=findpeaks(a/max(a),'MinPeakDistance',2*135);
+            idx_pks_itself=find(idx_pks<(135*43)&idx_pks>(135*41));
+            idx_pks_raddev=find(idx_pks<(135*37)&idx_pks>(135*32));
+            idx_pks_wstflx=find(idx_pks<(135*19)&idx_pks>(135*14));
+            idx_pks_raddev1kg=find(idx_pks<(135*31)&idx_pks>(135*26));
+            idx_pks_wstflx1kg=find(idx_pks<(135*13)&idx_pks>(135*8));
+            idx_pks_raddev2kg=find(idx_pks<(135*25)&idx_pks>(135*20));
+            idx_pks_wstflx2kg=find(idx_pks<(135*7)&idx_pks>(135*2));
+            cr_raddev=max(pks(idx_pks_raddev));
+            cr_wstflx=max(pks(idx_pks_wstflx));
+            cr_raddev1kg=max(pks(idx_pks_raddev1kg));
+            cr_wstflx1kg=max(pks(idx_pks_wstflx1kg));
+            cr_raddev2kg=max(pks(idx_pks_raddev2kg));
+            cr_wstflx2kg=max(pks(idx_pks_wstflx2kg));
+            cr_itself=max(pks(idx_pks_itself));
+            
+            MLMtst_1(idx,:)=[cr_raddev cr_raddev1kg cr_raddev2kg cr_wstflx cr_wstflx1kg cr_wstflx2kg ];
+        end
+        clear('a','b','pks','idx_pks','idx_pks_itself','idx_pks_raddev','idx_pks_wstflx');
+        %tst2 autocorr
+        [a b]=xcorr(interp(cell2mat(No_ISI_tst2(:,idx)),3),interp(ISImat_tst2,3));
+        if max(a)>0;
+            [pks idx_pks]=findpeaks(a/max(a),'MinPeakDistance',2*135);
+            idx_pks_itself=find(idx_pks<(135*43)&idx_pks>(135*41));
+            idx_pks_raddev=find(idx_pks<(135*37)&idx_pks>(135*32));
+            idx_pks_wstflx=find(idx_pks<(135*19)&idx_pks>(135*14));
+            idx_pks_raddev1kg=find(idx_pks<(135*31)&idx_pks>(135*26));
+            idx_pks_wstflx1kg=find(idx_pks<(135*13)&idx_pks>(135*8));
+            idx_pks_raddev2kg=find(idx_pks<(135*25)&idx_pks>(135*20));
+            idx_pks_wstflx2kg=find(idx_pks<(135*7)&idx_pks>(135*2));
+            cr_raddev=max(pks(idx_pks_raddev));
+            cr_wstflx=max(pks(idx_pks_wstflx));
+            cr_raddev1kg=max(pks(idx_pks_raddev1kg));
+            cr_wstflx1kg=max(pks(idx_pks_wstflx1kg));
+            cr_raddev2kg=max(pks(idx_pks_raddev2kg));
+            cr_wstflx2kg=max(pks(idx_pks_wstflx2kg));
+            cr_itself=max(pks(idx_pks_itself));
+            MLMtst_2(idx,:)=[cr_raddev cr_raddev1kg cr_raddev2kg cr_wstflx cr_wstflx1kg cr_wstflx2kg ];
+        end
+        clear('a','b','pks','idx_pks','idx_pks_itself','idx_pks_raddev','idx_pks_wstflx');
+        
+        %tst3 autocorr
+        [a b]=xcorr(interp(cell2mat(No_ISI_tst3(:,idx)),3),interp(ISImat_tst3,3));
+        if max(a)>0;
+            [pks idx_pks]=findpeaks(a/max(a),'MinPeakDistance',2*135);
+            idx_pks_itself=find(idx_pks<(135*43)&idx_pks>(135*41));
+            idx_pks_raddev=find(idx_pks<(135*37)&idx_pks>(135*32));
+            idx_pks_wstflx=find(idx_pks<(135*19)&idx_pks>(135*14));
+            idx_pks_raddev1kg=find(idx_pks<(135*31)&idx_pks>(135*26));
+            idx_pks_wstflx1kg=find(idx_pks<(135*13)&idx_pks>(135*8));
+            idx_pks_raddev2kg=find(idx_pks<(135*25)&idx_pks>(135*20));
+            idx_pks_wstflx2kg=find(idx_pks<(135*7)&idx_pks>(135*2));
+            cr_raddev=max(pks(idx_pks_raddev));
+            cr_wstflx=max(pks(idx_pks_wstflx));
+            cr_raddev1kg=max(pks(idx_pks_raddev1kg));
+            cr_wstflx1kg=max(pks(idx_pks_wstflx1kg));
+            cr_raddev2kg=max(pks(idx_pks_raddev2kg));
+            cr_wstflx2kg=max(pks(idx_pks_wstflx2kg));
+            cr_itself=max(pks(idx_pks_itself));
+            MLMtst_3(idx,:)=[cr_raddev cr_raddev1kg cr_raddev2kg cr_wstflx cr_wstflx1kg cr_wstflx2kg ];
+        end
+        clear('a','b','pks','idx_pks','idx_pks_itself','idx_pks_raddev','idx_pks_wstflx');
+        %tst4 autocorr
+        [a b]=xcorr(interp(cell2mat(No_ISI_tst4(:,idx)),3),interp(ISImat_tst4,3));
+        if max(a)>0;
+            [pks idx_pks]=findpeaks(a/max(a),'MinPeakDistance',2*135);
+            idx_pks_itself=find(idx_pks<(135*43)&idx_pks>(135*41));
+            idx_pks_raddev=find(idx_pks<(135*37)&idx_pks>(135*32));
+            idx_pks_wstflx=find(idx_pks<(135*19)&idx_pks>(135*14));
+            idx_pks_raddev1kg=find(idx_pks<(135*31)&idx_pks>(135*26));
+            idx_pks_wstflx1kg=find(idx_pks<(135*13)&idx_pks>(135*8));
+            idx_pks_raddev2kg=find(idx_pks<(135*25)&idx_pks>(135*20));
+            idx_pks_wstflx2kg=find(idx_pks<(135*7)&idx_pks>(135*2));
+            cr_raddev=max(pks(idx_pks_raddev));
+            cr_wstflx=max(pks(idx_pks_wstflx));
+            cr_raddev1kg=max(pks(idx_pks_raddev1kg));
+            cr_wstflx1kg=max(pks(idx_pks_wstflx1kg));
+            cr_raddev2kg=max(pks(idx_pks_raddev2kg));
+            cr_wstflx2kg=max(pks(idx_pks_wstflx2kg));
+            cr_itself=max(pks(idx_pks_itself));
+            MLMtst_4(idx,:)=[cr_raddev cr_raddev1kg cr_raddev2kg cr_wstflx cr_wstflx1kg cr_wstflx2kg ];
+        end
+        clear('a','b','pks','idx_pks','idx_pks_itself','idx_pks_raddev','idx_pks_wstflx');
+        %tst5 autocorr
+        [a b]=xcorr(interp(cell2mat(No_ISI_tst5(:,idx)),3),interp(ISImat_tst5,3));
+        if max(a)>0;
+            [pks idx_pks]=findpeaks(a/max(a),'MinPeakDistance',2*135);
+            idx_pks_itself=find(idx_pks<(135*43)&idx_pks>(135*41));
+            idx_pks_raddev=find(idx_pks<(135*37)&idx_pks>(135*32));
+            idx_pks_wstflx=find(idx_pks<(135*19)&idx_pks>(135*14));
+            idx_pks_raddev1kg=find(idx_pks<(135*31)&idx_pks>(135*26));
+            idx_pks_wstflx1kg=find(idx_pks<(135*13)&idx_pks>(135*8));
+            idx_pks_raddev2kg=find(idx_pks<(135*25)&idx_pks>(135*20));
+            idx_pks_wstflx2kg=find(idx_pks<(135*7)&idx_pks>(135*2));
+            cr_raddev=max(pks(idx_pks_raddev));
+            cr_wstflx=max(pks(idx_pks_wstflx));
+            cr_raddev1kg=max(pks(idx_pks_raddev1kg));
+            cr_wstflx1kg=max(pks(idx_pks_wstflx1kg));
+            cr_raddev2kg=max(pks(idx_pks_raddev2kg));
+            cr_wstflx2kg=max(pks(idx_pks_wstflx2kg));
+            cr_itself=max(pks(idx_pks_itself));
+            MLMtst_5(idx,:)=[cr_raddev cr_raddev1kg cr_raddev2kg cr_wstflx cr_wstflx1kg cr_wstflx2kg ];
+        end
+        clear('a','b','pks','idx_pks','idx_pks_itself','idx_pks_raddev','idx_pks_wstflx');
+        %tst6 autocorr
+        [a b]=xcorr(interp(cell2mat(No_ISI_tst6(:,idx)),3),interp(ISImat_tst6,3));
+        if max(a)>0;
+            [pks idx_pks]=findpeaks(a/max(a),'MinPeakDistance',2*135);
+            idx_pks_itself=find(idx_pks<(135*43)&idx_pks>(135*41));
+            idx_pks_raddev=find(idx_pks<(135*37)&idx_pks>(135*32));
+            idx_pks_wstflx=find(idx_pks<(135*19)&idx_pks>(135*14));
+            idx_pks_raddev1kg=find(idx_pks<(135*31)&idx_pks>(135*26));
+            idx_pks_wstflx1kg=find(idx_pks<(135*13)&idx_pks>(135*8));
+            idx_pks_raddev2kg=find(idx_pks<(135*25)&idx_pks>(135*20));
+            idx_pks_wstflx2kg=find(idx_pks<(135*7)&idx_pks>(135*2));
+            cr_raddev=max(pks(idx_pks_raddev));
+            cr_wstflx=max(pks(idx_pks_wstflx));
+            cr_raddev1kg=max(pks(idx_pks_raddev1kg));
+            cr_wstflx1kg=max(pks(idx_pks_wstflx1kg));
+            cr_raddev2kg=max(pks(idx_pks_raddev2kg));
+            cr_wstflx2kg=max(pks(idx_pks_wstflx2kg));
+            cr_itself=max(pks(idx_pks_itself));
+            MLMtst_6(idx,:)=[cr_raddev cr_raddev1kg cr_raddev2kg cr_wstflx cr_wstflx1kg cr_wstflx2kg ];
+        end
+        clear('a','b','pks','idx_pks','idx_pks_itself','idx_pks_raddev','idx_pks_wstflx');
+    end
+    clear('MLM')
+    %clear non firing neurons
+    MLMtst_1([find(MLMtst_1(:,1)==0 & MLMtst_1(:,2)==0 & MLMtst_1(:,3)==0 & MLMtst_1(:,4)==0 & MLMtst_1(:,6)==0 & MLMtst_1(:,6)==0)],:)=[];
+    MLMtst_2([find(MLMtst_2(:,1)==0 & MLMtst_2(:,2)==0 & MLMtst_2(:,3)==0 & MLMtst_2(:,4)==0 & MLMtst_2(:,6)==0 & MLMtst_2(:,6)==0)],:)=[];
+    MLMtst_3([find(MLMtst_3(:,1)==0 & MLMtst_3(:,2)==0 & MLMtst_3(:,3)==0 & MLMtst_3(:,4)==0 & MLMtst_3(:,6)==0 & MLMtst_3(:,6)==0)],:)=[];
+    MLMtst_4([find(MLMtst_4(:,1)==0 & MLMtst_4(:,2)==0 & MLMtst_4(:,3)==0 & MLMtst_4(:,4)==0 & MLMtst_4(:,6)==0 & MLMtst_4(:,6)==0)],:)=[];
+    MLMtst_5([find(MLMtst_5(:,1)==0 & MLMtst_5(:,2)==0 & MLMtst_5(:,3)==0 & MLMtst_5(:,4)==0 & MLMtst_5(:,6)==0 & MLMtst_5(:,6)==0)],:)=[];
+    MLMtst_6([find(MLMtst_6(:,1)==0 & MLMtst_6(:,2)==0 & MLMtst_6(:,3)==0 & MLMtst_6(:,4)==0 & MLMtst_6(:,6)==0 & MLMtst_6(:,6)==0)],:)=[];
+    
+    
+    RESULTS1(idx_ZTST,:)=median(MLMtst_1);
+    RESULTS2(idx_ZTST,:)=median(MLMtst_2);
+    RESULTS3(idx_ZTST,:)=median(MLMtst_3);
+    RESULTS4(idx_ZTST,:)=median(MLMtst_4);
+    RESULTS5(idx_ZTST,:)=median(MLMtst_5);
+    RESULTS6(idx_ZTST,:)=median(MLMtst_6);
+    
+    clear('MLMtst_6', 'MLMtst_1', 'MLMtst_2', 'MLMtst_3', 'MLMtst_4', 'MLMtst_5');
 end
+%% Results and plots
 
-for idx=1:max(unique(scrs_2(1,:)));
-    %scrs3
-    idx2{idx}=find(scrs_3(1,:)==idx);
-   [No_ISI3{idx} ~]=histcounts(scrs_3(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot((smooth(No_ISI3{idx},11))/max(smooth(No_ISI3{idx},11)),'r--');hold on;
-    %scrs_tst
-    idx2{idx}=find(scrs_tst3(1,:)==idx);
-    [No_ISI_tst3{idx} ~]=histcounts(scrs_tst3(3,idx2{idx}),'BinWidth',1,'BinLimits',[5,1000]);
-    figure(idx);
-    plot((smooth(No_ISI_tst3{idx},11))/max(smooth(No_ISI_tst3{idx},11)),'k');hold on;
-end 
-%add all intervals
-%smooth/parsing acrtoss probability
-%compare autocorrelation
-%% Denoise Rate templates
+% ENG 
+figure(40)
+plot((1:length(all_data))/fs_all,all_data(102,:))
+ylabel('Nerve ENG (Volts)');
+xlabel('Time(seconds)');
+title('ENG with bandpass and upsampled');
+grid minor;
 
-%Check correlation of rate templates to other known rate templates and
-%weight by number of spikes per neuron. This gives the ratio of similarity
-%between templates
-for idx=1:length(idx_neuron);
-    %1
-    ISImat_all=[No_ISI1(idx) No_ISI2(idx) No_ISI3(idx) No_ISI4(idx) No_ISI5(idx) No_ISI6(idx)]';
-    ISImat_all=cell2mat(ISImat_all);
+% Muscle activity per motion over time under 3 weights
 
-    % Correlation between templates weighted by number of spikes per neuron
-    % per motion
-    CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI1(idx))>0));
-    CrTemp_1(idx,:)=CrTemp2Temp(1,:);
-    
-    CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI2(idx))>0));
-    CrTemp_2(idx,:)=CrTemp2Temp(2,:);
-    
-    CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI3(idx))>0));
-    CrTemp_3(idx,:)=CrTemp2Temp(3,:);
-    
-    CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI4(idx))>0));
-    CrTemp_4(idx,:)=CrTemp2Temp(4,:);
-    
-    CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI5(idx))>0));
-    CrTemp_5(idx,:)=CrTemp2Temp(5,:);
-    
-    CrTemp2Temp=corr(ISImat_all')*length(find(cell2mat(No_ISI6(idx))>0));
-    CrTemp_6(idx,:)=CrTemp2Temp(6,:);
+% Radial Deviation (ECR)
+figure(31)
+plot((1:wndw)/fs_all,smooth(RadialDeviation(idx_EXTCRAD_EMG,:),400),'r'); hold on;
+plot((wndw+1:2*wndw)/fs_all,smooth(RadialDeviation_1kg(idx_EXTCRAD_EMG,:),400),'g'); hold on;
+plot((2*wndw+1:3*wndw)/fs_all,smooth(RadialDeviation_2kg(idx_EXTCRAD_EMG,:),400),'b');
+ylabel('RMS Muscle Activity');
+xlabel('Time(seconds)');
+title('RadialDeviation then WristFlexion');
+hold on;
+
+% Wrist Flexion (FCR)
+plot((3*wndw+1:4*wndw)/fs_all,smooth(WristFlexion(idx_FLXCRAD_EMG,:),400),'r');hold on;
+plot((4*wndw+1:5*wndw)/fs_all,smooth(WristFlexion_1kg(idx_FLXCRAD_EMG,:),400),'g');hold on;
+plot((5*wndw+1:6*wndw)/fs_all,smooth(WristFlexion_2kg(idx_FLXCRAD_EMG,:),400),'b');hold on;
+hold on;
+legend('ECR','ECR1KG','ECR2KG','FCR','FCR1KG','FCR2KG');
+set(legend,'Location','northeast');
+grid minor;
+
+%IMU data
+figure(32)
+for i=1:3
+    hold on;
+    plot((1:length(all_data_DORSUM_Acc))/fs_all,smooth(all_data_DORSUM_Acc(i,:)*((length(Templates))*-1)+3,1200)); hold on
 end
-clear('CrTemp2Temp')
+ylabel('Arbitrary Value of Deviation');
+xlabel('Time(seconds)');
+title('RadialDeviation then WristFlexion');
+hold on;
+legend('X','Y','Z');
 
-%Normalise similarity matrix
-CrTemp_1=CrTemp_1./max(CrTemp_1')';
-CrTemp_2=CrTemp_2./max(CrTemp_2')';
-CrTemp_3=CrTemp_3./max(CrTemp_3')';
-CrTemp_4=CrTemp_4./max(CrTemp_4')';
-CrTemp_5=CrTemp_5./max(CrTemp_5')';
-CrTemp_6=CrTemp_6./max(CrTemp_6')';
-
-%Remove negative
-idx=find(CrTemp_1<0);
-CrTemp_1(idx)=0;
-idx=find(CrTemp_2<0);
-CrTemp_2(idx)=0;
-idx=find(CrTemp_3<0);
-CrTemp_3(idx)=0;
-idx=find(CrTemp_4<0);
-CrTemp_4(idx)=0;
-idx=find(CrTemp_5<0);
-CrTemp_5(idx)=0;
-idx=find(CrTemp_6<0);
-CrTemp_6(idx)=0;
-
-
-%Remove ratio of similar templates
-for idx=1:length(idx_neuron)
-    %1
-    No_ISI1n(idx,:)=((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))-...
-        nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_1(idx,2)));...
-        ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_1(idx,3)));...
-        ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_1(idx,4)));...
-        ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_1(idx,5)));...
-        ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_1(idx,6)))]);
-    %2
-     No_ISI2n(idx,:)=((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))-...
-        nansum([((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_2(idx,1)));...
-        ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_2(idx,3)));...
-        ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_2(idx,4)));...
-        ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_2(idx,5)));...
-        ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_2(idx,6)))]);
-    %3
-     No_ISI3n(idx,:)=((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))-...
-        nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_3(idx,2)));...
-        ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_3(idx,1)));...
-        ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_3(idx,4)));...
-        ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_3(idx,5)));...
-        ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_3(idx,6)))]);
-    %4
-    No_ISI4n(idx,:)=((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))-...
-        nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_4(idx,2)));...
-        ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_4(idx,3)));...
-        ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_4(idx,1)));...
-        ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_4(idx,5)));...
-        ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_4(idx,6)))]);
-    %5
- No_ISI5n(idx,:)=((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))-...
-        nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_5(idx,2)));...
-        ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_5(idx,3)));...
-        ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_5(idx,4)));...
-        ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_5(idx,1)));...
-        ((((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))*CrTemp_5(idx,6)))]);
-%6
-     No_ISI6n(idx,:)=((cell2mat(No_ISI6(idx)))/max(cell2mat(No_ISI6(idx))))-...
-        nansum([((((cell2mat(No_ISI2(idx)))/max(cell2mat(No_ISI2(idx))))*CrTemp_6(idx,2)));...
-        ((((cell2mat(No_ISI3(idx)))/max(cell2mat(No_ISI3(idx))))*CrTemp_6(idx,3)));...
-        ((((cell2mat(No_ISI4(idx)))/max(cell2mat(No_ISI4(idx))))*CrTemp_6(idx,4)));...
-        ((((cell2mat(No_ISI5(idx)))/max(cell2mat(No_ISI5(idx))))*CrTemp_6(idx,5)));...
-        ((((cell2mat(No_ISI1(idx)))/max(cell2mat(No_ISI1(idx))))*CrTemp_6(idx,1)))]);
+% All templates over time
+clour=char('k','m', 'c' ,'r', 'g', 'b', 'w', 'y' ,'r--', 'b--', 'g--');
+figure(33)
+for idx=1:length(Templates(:,1))
+    % Collect indices per spike label
+    idx_lbl{idx,:}=find(MUAP_label==idx);
+    for i=1:length(Templates{idx,:}(:,1));
+        % Create cell for true indices per spike label
+        idx_lbl{idx,:}(:,i)=MUAP_idx(idx_lbl{idx,:}(:,i));
+        % Plot all templates
+        wndow=((idx_lbl{idx,:}(:,i))+(1:length(Templates{idx,:}(i,:)))-1);
+        plot(wndow/fs_all,idx+Templates{idx,:}(i,:),clour(idx)); hold on; %Each row corresponds to a spike label
+    end
 end
-%Remove negative values
-idx=find(No_ISI1n<0);
-No_ISI1n(idx)=0;
-idx=find(No_ISI2n<0);
-No_ISI2n(idx)=0;
-idx=find(No_ISI3n<0);
-No_ISI3n(idx)=0;
-idx=find(No_ISI4n<0);
-No_ISI4n(idx)=0;
-idx=find(No_ISI5n<0);
-No_ISI5n(idx)=0;
-idx=find(No_ISI6n<0);
-No_ISI6n(idx)=0;
+clear('i', 'idx_eur', 'wndow');
+hold on;
+plot((1:length(all_data))/fs_all, scrs_all(2,:)*length(Templates),'k','linewidth',1.25); % basic imu+emg
+ylabel('Spike Coloured per Neuron');
+xlabel('Time(seconds)');
+ylim([-3 16]);
+title('RadialDeviation then WristFlexion');
+hold on;
+grid minor;
 
-%clear('No_ISI1', 'No_ISI2', 'No_ISI3', 'No_ISI4', 'No_ISI5', 'No_ISI6');
-%% Correlation with test motion and motion templates
-for idx=1:length(idx_neuron);
-%tst1
-ISImat_tst1=[No_ISI1n(idx,:) No_ISI2n(idx,:) No_ISI3n(idx,:) No_ISI4n(idx,:) No_ISI5n(idx,:) No_ISI6n(idx,:) No_ISI_tst1(idx)]';
-ISImat_tst1=cell2mat(ISImat_tst1);
-%tst2
-ISImat_tst2=[No_ISI1n(idx,:) No_ISI2n(idx,:) No_ISI3n(idx,:) No_ISI4n(idx,:) No_ISI5n(idx,:) No_ISI6n(idx,:) No_ISI_tst2(idx)]';
-ISImat_tst2=cell2mat(ISImat_tst2);
-%tst3
-ISImat_tst3=[No_ISI1n(idx,:) No_ISI2n(idx,:) No_ISI3n(idx,:) No_ISI4n(idx,:) No_ISI5n(idx,:) No_ISI6n(idx,:) No_ISI_tst3(idx)]';
-ISImat_tst3=cell2mat(ISImat_tst3);
-%tst4
-ISImat_tst4=[No_ISI1n(idx,:) No_ISI2n(idx,:) No_ISI3n(idx,:) No_ISI4n(idx,:) No_ISI5n(idx,:) No_ISI6n(idx,:) No_ISI_tst4(idx)]';
-ISImat_tst4=cell2mat(ISImat_tst4);
-%tst5
-ISImat_tst5=[No_ISI1n(idx,:) No_ISI2n(idx,:) No_ISI3n(idx,:) No_ISI4n(idx,:) No_ISI5n(idx,:) No_ISI6n(idx,:) No_ISI_tst5(idx)]';
-ISImat_tst5=cell2mat(ISImat_tst5);
-%tst6
-ISImat_tst6=[No_ISI1n(idx,:) No_ISI2n(idx,:) No_ISI3n(idx,:) No_ISI4n(idx,:) No_ISI5n(idx,:) No_ISI6n(idx,:) No_ISI_tst6(idx)]';
-ISImat_tst6=cell2mat(ISImat_tst6);
+%ISI dist examples
+figure(34)
+plot((1:3*length(No_ISI1n))/3000,abs(interp(((nansum(No_ISI1n))/max(nansum(No_ISI1n))),3)),'b','linewidth',1.25); hold on
+plot((1:3*length(No_ISI1n))/3000,abs(interp(((nansum(cell2mat(No_ISI_tst1')))/max(nansum(cell2mat(No_ISI_tst1')))),3)),'r','linewidth',1)
+ylim([0 1]);
+xlim([0.005 0.135]);
+ylabel('Firing Probability');
+xlabel('Interspike Interval (Seconds)');
+title('Radial Deviation 0kg ISI Distribution');
+legend('Train','Test');
+set(legend,'Location','northeast');
+grid minor
+figure(35)
+plot((1:3*length(No_ISI1n))/3000,abs(interp(((nansum(No_ISI1n))/max(nansum(No_ISI1n))),3)),'b','linewidth',1.25); hold on
+plot((1:3*length(No_ISI1n))/3000,abs(interp(((nansum(cell2mat(No_ISI_tst2')))/max(nansum(cell2mat(No_ISI_tst2')))),3)),'r','linewidth',1)
+ylim([0 1]);
+xlim([0.005 0.135]);
+ylabel('Firing Probability');
+xlabel('Interspike Interval (Seconds)');
+title('Radial Deviation 1kg ISI Distribution');
+legend('Train','Test');
+set(legend,'Location','northeast');
+grid minor
+figure(36)
+plot((1:3*length(No_ISI1n))/3000,abs(interp(((nansum(No_ISI1n))/max(nansum(No_ISI1n))),3)),'b','linewidth',1.25); hold on
+plot((1:3*length(No_ISI1n))/3000,abs(interp(((nansum(cell2mat(No_ISI_tst3')))/max(nansum(cell2mat(No_ISI_tst3')))),3)),'r','linewidth',1)
+ylim([0 1]);
+xlim([0.005 0.135]);
+ylabel('Firing Probability');
+xlabel('Interspike Interval (Seconds)');
+title('Radial Deviation 2kg ISI Distribution');
+legend('Train','Test');
+set(legend,'Location','northeast');
+grid minor
+figure(37)
+plot((1:3*length(No_ISI4n))/3000,abs(interp(((nansum(No_ISI4n))/max(nansum(No_ISI4n))),3)),'b','linewidth',1.25); hold on
+plot((1:3*length(No_ISI4n))/3000,abs(interp(((nansum(cell2mat(No_ISI_tst4')))/max(nansum(cell2mat(No_ISI_tst4')))),3)),'r','linewidth',1)
+ylim([0 1]);
+xlim([0.005 0.135]);
+ylabel('Firing Probability');
+xlabel('Interspike Interval (Seconds)');
+title('Wrist Flexion 0kg ISI Distribution');
+legend('Train','Test');
+set(legend,'Location','northeast');
+grid minor
+figure(38)
+plot((1:3*length(No_ISI4n))/3000,abs(interp(((nansum(No_ISI4n))/max(nansum(No_ISI4n))),3)),'b','linewidth',1.25); hold on
+plot((1:3*length(No_ISI4n))/3000,abs(interp(((nansum(cell2mat(No_ISI_tst5')))/max(nansum(cell2mat(No_ISI_tst5')))),3)),'r','linewidth',1)
+ylim([0 1]);
+xlim([0.005 0.135]);
+ylabel('Firing Probability');
+xlabel('Interspike Interval (Seconds)');
+title('Wrist Flexion 1kg ISI Distribution');
+legend('Train','Test');
+set(legend,'Location','northeast');
+grid minor
+figure(39)
+plot((1:3*length(No_ISI4n))/3000,abs(interp(((nansum(No_ISI4n))/max(nansum(No_ISI4n))),3)),'b','linewidth',1.25); hold on
+plot((1:3*length(No_ISI4n))/3000,abs(interp(((nansum(cell2mat(No_ISI_tst6')))/max(nansum(cell2mat(No_ISI_tst6')))),3)),'r','linewidth',1)
+ylim([0 1]);
+xlim([0.005 0.135]);
+ylabel('Firing Probability');
+xlabel('Interspike Interval (Seconds)');
+title('Wrist Flexion 2kg ISI Distribution');
+legend('Train','Test');
+set(legend,'Location','northeast');
+grid minor
 
-MLM=corr(ISImat_tst1')*length(find(ISImat_tst1>0));%Most Likely Motion
-MLMtst_1(idx,:)=MLM(7,:);
-
-MLM=corr(ISImat_tst2')*length(find(ISImat_tst2>0));%Most Likely Motion
-MLMtst_2(idx,:)=MLM(7,:);
-
-MLM=corr(ISImat_tst3')*length(find(ISImat_tst3>0));%Most Likely Motion
-MLMtst_3(idx,:)=MLM(7,:);
-
-MLM=corr(ISImat_tst4')*length(find(ISImat_tst4>0));%Most Likely Motion
-MLMtst_4(idx,:)=MLM(7,:);
-
-MLM=corr(ISImat_tst5')*length(find(ISImat_tst5>0));%Most Likely Motion
-MLMtst_5(idx,:)=MLM(7,:);
-
-MLM=corr(ISImat_tst6')*length(find(ISImat_tst6>0));%Most Likely Motion
-MLMtst_6(idx,:)=MLM(7,:);
-end
-clear('MLM')
+%Most likely motion (Correlation with median, maximum, minimum and
+%quantiles)
 figure(21);
-bar(((nansum(MLMtst_1)))/max((nansum(MLMtst_1)))); hold on;
-ylabel('Correlation');
-xlabel('Motion Index (7 is test motion)');
+boxplot(RESULTS1); hold on;
+ylabel('Correlation'); xlim([0.5 6.5]); ylim([0 1]);
+xlabel('Motion Index (1=Rad0kg 2=Rad1kg 3=Rad2kg 4=Wrist0kg 5=Wrist1kg 6=Wrist2kg)');
 title('Motion 1: Radial Deviation 0Kg');
+grid('minor');
 figure(22);
-bar(((nansum(MLMtst_2)))/max((nansum(MLMtst_2)))); hold on;
-ylabel('Correlation');
-xlabel('Motion Index (7 is test motion)');
+boxplot(RESULTS2); hold on;
+ylabel('Correlation'); xlim([0.5 6.5]); ylim([0 1]);
+xlabel('Motion Index (1=Rad0kg 2=Rad1kg 3=Rad2kg 4=Wrist0kg 5=Wrist1kg 6=Wrist2kg)');
 title('Motion 2: Radial Deviation 1Kg');
+grid('minor');
 figure(23);
-bar(((nansum(MLMtst_3)))/max((nansum(MLMtst_3)))); hold on;
-ylabel('Correlation');
-xlabel('Motion Index (7 is test motion)');
+boxplot(RESULTS3); hold on;
+ylabel('Correlation'); xlim([0.5 6.5]); ylim([0 1]);
+xlabel('Motion Index (1=Rad0kg 2=Rad1kg 3=Rad2kg 4=Wrist0kg 5=Wrist1kg 6=Wrist2kg)');
 title('Motion 3: Radial Deviation 2Kg');
+grid('minor');
 figure(24);
-bar(((nansum(MLMtst_4)))/max((nansum(MLMtst_4)))); hold on;
-ylabel('Correlation');
-xlabel('Motion Index (7 is test motion)');
+boxplot(RESULTS4); hold on;
+ylabel('Correlation'); xlim([0.5 6.5]); ylim([0 1]);
+xlabel('Motion Index (1=Rad0kg 2=Rad1kg 3=Rad2kg 4=Wrist0kg 5=Wrist1kg 6=Wrist2kg)');
 title('Motion 4: Wrist Flexion 0Kg');
+grid('minor');
 figure(25);
-bar(((nansum(MLMtst_5)))/max((nansum(MLMtst_5)))); hold on;
-ylabel('Correlation');
-xlabel('Motion Index (7 is test motion)');
+boxplot(RESULTS5); hold on;
+ylabel('Correlation'); xlim([0.5 6.5]); ylim([0 1]);
+xlabel('Motion Index (1=Rad0kg 2=Rad1kg 3=Rad2kg 4=Wrist0kg 5=Wrist1kg 6=Wrist2kg)');
 title('Motion 5: Wrist Flexion 1Kg');
+grid('minor');
 figure(26);
-bar(((nansum(MLMtst_6)))/max((nansum(MLMtst_6)))); hold on;
-ylabel('Correlation');
-xlabel('Motion Index (7 is test motion)');
+boxplot(RESULTS6); hold on;
+ylabel('Correlation'); xlim([0.5 6.5]); ylim([0 1]);
+xlabel('Motion Index (1=Rad0kg 2=Rad1kg 3=Rad2kg 4=Wrist0kg 5=Wrist1kg 6=Wrist2kg)');
 title('Motion 6: Wrist Flexion 2Kg');
+grid('minor');
+
+
+%Precision and recall
+% tp=sum(sum([RESULTS1(:,1) RESULTS2(:,2) RESULTS3(:,3) RESULTS4(:,4) RESULTS5(:,5) RESULTS6(:,6)]))/30
+% RESULTS1(:,1)=[];
+% RESULTS2(:,2)=[] ;
+% RESULTS3(:,3)=[] ;
+% RESULTS4(:,4)=[] ;
+% RESULTS5(:,5)=[] ;
+% RESULTS6(:,6)=[];
+% RESULTS1(:,6)=[];
+% RESULTS2(:,6)=[] ;
+% RESULTS3(:,6)=[] ;
+% RESULTS4(:,6)=[] ;
+% RESULTS5(:,6)=[] ;
+% RESULTS6(:,6)=[];
+% fp=sum(sum(abs([RESULTS1 RESULTS2 RESULTS3 RESULTS4 RESULTS5 RESULTS6])))/150
+% precsn=tp/(fp+tp)
+% tp=sum(sum([RESULTS1(:,1) RESULTS2(:,1) RESULTS3(:,1) RESULTS4(:,2) RESULTS5(:,2) RESULTS6(:,2)]))/30
+% RESULTS1(:,1)=[];
+% RESULTS2(:,1)=[] ;
+% RESULTS3(:,1)=[] ;
+% RESULTS4(:,2)=[] ;
+% RESULTS5(:,2)=[] ;
+% RESULTS6(:,2)=[];
+% % RESULTS1(:,2)=[];
+% % RESULTS2(:,2)=[] ;
+% % RESULTS3(:,2)=[] ;
+% % RESULTS4(:,2)=[] ;
+% % RESULTS5(:,2)=[] ;
+% % RESULTS6(:,2)=[];
+% fp=sum(sum([RESULTS1 RESULTS2 RESULTS3 RESULTS4 RESULTS5 RESULTS6]))/30
+% precsn=tp/(fp+tp)
+tp=sum(sum([RESULTS1(:,1) RESULTS2(:,2) RESULTS3(:,3) RESULTS4(:,4) RESULTS5(:,5) RESULTS6(:,6)]))/30
+RESULTS1(:,1)=[];
+RESULTS2(:,2)=[] ;
+RESULTS3(:,3)=[] ;
+RESULTS4(:,4)=[] ;
+RESULTS5(:,5)=[] ;
+% RESULTS6(:,6)=[];
+% RESULTS1(:,6)=[];
+% RESULTS2(:,6)=[] ;
+% RESULTS3(:,6)=[] ;
+% RESULTS4(:,6)=[] ;
+% RESULTS5(:,6)=[] ;
+% RESULTS6(:,6)=[];
+fp=sum(sum(abs([RESULTS1 RESULTS2 RESULTS3 RESULTS4 RESULTS5 RESULTS6])))/150
+precsn=tp/(fp+tp)
+
 %% Check
 % for idx=1:length(idx_neuron);
 % %1
@@ -848,15 +1402,9 @@ title('Motion 6: Wrist Flexion 2Kg');
 %  end
 %  end
 
-
-%% Classify primary muscle used
-
 %% Classify directedness/smoothness
 
-%% Score spikes within time windows according to muscle and motion data
-
 %% Compare spike counts from similar motions over increased weight applied during motion
-
 %Repeat below for each motion
 % C={[MUAP_label]};
 % [uvals,~,bin]=unique(cell2mat(C));
